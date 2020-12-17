@@ -1,0 +1,85 @@
+{% extends "dataschema_app/base_schema.html" %}
+
+{% block title %}Dataset list{% endblock %}
+{% block content_title %}Data sets{% endblock %}
+{% block button %}
+<form method="post" action="{% url 'dataset-generate' %}">
+{% csrf_token %}
+    <label><input type="text" required name="rows">Rows</label>
+    <input type="hidden" name="schema" value={{ schema_id }}>
+
+    <input type="submit" value="Generate data">
+</form>
+{% endblock %}
+
+{% block content %}
+{% if dataset_list %}
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Created</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for dataset in dataset_list %}
+            <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ dataset.created }}</td>
+            <td>{{ dataset.status }}</td>
+            {% if dataset.status == "RD" %}
+            <td><a href="{{ dataset.file.path }}">Download</a></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>You don't have any data sets yet. Press the button "Generate data" for create one.</p>
+{% endif %}
+
+{% if request.session.task_id %}
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+  (function() {
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+   async function postData(url = '', data = {}) {
+       const response = await fetch(url, {
+            method: 'POST',
+            credentials : 'include',
+            headers: {
+              'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+      });
+       return await response.json();
+   }
+
+    let refreshIntervalId = setInterval(function() {
+      postData("{% url 'dataset-check-state' %}", { task_id: "{{ request.session.task_id }}",
+          dataset_id: "{{ request.session.dataset_id }}"})
+        .then((data) => {
+            if (data.result === true) {
+                clearInterval(refreshIntervalId);
+            }}), 5000})
+        })();
+    });
+</script>
+{% endif %}
+{% endblock %}

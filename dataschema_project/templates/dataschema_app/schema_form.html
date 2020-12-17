@@ -1,0 +1,58 @@
+{% extends "dataschema_app/base_schema.html" %}
+
+{% block title %}Schema create{% endblock %}
+
+{% block content_title %}New schema{% endblock %}
+{% block button %}<input type="submit" value="Submit" form="schema-create">{% endblock %}
+
+
+{% block content %}
+
+<form id="schema-create" method="post" action="{% url 'schema-create' %}">
+{% csrf_token %}
+{{ schema_form.as_p }}
+<p>Schema columns</p>
+{{ column_formset.management_form }}
+{% for form in column_formset %}
+<div class="column-form">
+{{ form.as_table }}
+<button id="del-form" type="button">Delete column</button>
+</div>
+{% endfor %}
+<button id="add-form" type="button">Add column</button>
+</form>
+
+<script>
+let columnForm = document.querySelectorAll(".column-form")
+let container = document.querySelector("#schema-create")
+let addButton = document.querySelector("#add-form")
+let delButton = document.querySelector("#del-form")
+let totalForms = document.querySelector("#id_form-TOTAL_FORMS")
+let formNum = columnForm.length-1
+
+addButton.addEventListener('click', addForm)
+delButton.addEventListener('click', delForm)
+
+function addForm(e){
+    e.preventDefault();
+
+    let newForm = columnForm[0].cloneNode(true);
+    let formRegex = RegExp(`form-(\\d){1}-`,'g');
+
+    formNum++;
+    newForm.innerHTML = newForm.innerHTML.replace(formRegex, `form-${formNum}-`);
+    container.insertBefore(newForm, addButton);
+
+    totalForms.setAttribute('value', `${formNum+1}`);
+}
+
+function delForm(e){
+    e.preventDefault();
+    totalForms.setAttribute('value', `${formNum-1}`);
+    e.target.parentNode.parentNode.removeChild(e.target.parentNode);
+
+}
+
+</script>
+
+{% endblock %}
